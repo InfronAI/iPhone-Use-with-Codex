@@ -1,32 +1,34 @@
-# 故障排查
+# Troubleshooting
 
-先区分源码编译、签名、设备连接、测试运行器、UI 交互和业务结果。下一层成功不应靠上一层成功来推断。
+**English** | [简体中文](zh-CN/05-troubleshooting.md) · [Documentation index](README.md)
 
-| 现象 | 检查与处理 | 如何确认恢复 |
+Separate source compilation, signing, device connection, the test Runner, UI interaction, and the task's actual outcome. Success at one stage does not prove success at the next.
+
+| Symptom | What to check or do | Evidence of recovery |
 |---|---|---|
-| `xcodebuild` 提示只装了 Command Line Tools | 选择完整 Xcode Developer 目录、安装 iOS 平台 | doctor 输出正确路径和版本 |
-| 找不到 `mcpbridge` | 核对安装版本与 `xcrun --find mcpbridge` | 命令存在、Codex 能实际调用工具 |
-| MCP enabled，但找不到工程 | 在 Xcode 打开工程，允许外部 agent，重载 Codex 配置 | 当前发现工具返回工作区 |
-| 旧文档中的 `XcodeListWindows` 不存在 | 查看当前 MCP 工具列表，使用当前 workspace 接口 | 实际工具调用成功 |
-| `SwiftUIMacros.StateMacro` / plugin malformed response | 检查前面的 sandbox/权限报错，必要时批准对应构建命令重试 | 同一源码构建成功；不应为权限问题盲改 SwiftUI |
-| `requires a development team` | 登录 Apple 账户、选 Team、填本地 10 位 Team ID | 签名构建成功并通过 codesign verify |
-| bundle identifier 不可用 | 换成自己唯一的前缀；App 和 UI test 一起改 | Xcode 成功创建/找到 provisioning |
-| 签名卡住 | 检查 Mac 上 codesign 的钥匙串提示，由本人处理 | 日志离开 CodeSign 并完成构建 |
-| `unavailable` / 设备不见了 | 解锁、换数据线/端口、确认信任和开发者模式 | physical 设备 connected |
-| 编译成功却安装失败 | 检查签名、描述文件、手机系统支持和锁定状态 | devicectl install 返回成功 |
-| launch 报 missing `--device` | 所有选项放到 bundle ID 前面；后面的内容可能当作 App 参数 | launch.json 记录启动结果 |
-| Home 事件后后台测试失败 | 不假设 Home 生效，检查 app.state，改用 activate 设置 | 明确进入后台，再返回暂停界面 |
-| `Wait for ... to idle` 长时间不返回 | 看 runner.log，延长 collect，独立截图核对；不要重发动作 | 原动作 result 和新 UI 状态出现 |
-| collect 初始结果一直不存在 | Runner 未启动、签名等待、错误 bundle ID、手机锁定；检查 runner.log | CODEX_CONTROL_READY 与 result-0 |
-| Runner 在 10 分钟结束 | 只设 maximum allowance 不会覆盖默认时限；同时设 default allowance 和 XCTestCase.executionTimeAllowance | 新会话日志不再使用旧默认值 |
-| pending 阻止后续动作 | 前一次结果未知，继续 collect；失败传输也可能部分完成 | 原动作结果确认后 pending 才清空 |
-| tap-id 非唯一或不可点击 | 读取最新 hierarchy，找唯一可点击元素 | 只有一个可见匹配 |
-| 截图与点击位置不一致 | points 与 pixels 混用、横竖屏变了、键盘弹出后坐标过时 | 用最新 UI 树重新定位 |
-| 文字输入到了错误位置 | 先聚焦输入框，观察键盘/草稿 | 屏幕和层级显示正确内容 |
-| 旧 Xcode 无 capture screenshot 命令 | 运行 `xcrun devicectl help device capture screenshot` 检查 | 使用控制桥截图或 XCTest 附件 |
-| 网络下载失败且代理为本地端口 | 检查代理是否运行和当前执行权限 | 实际请求成功；不擅自删用户代理配置 |
+| xcodebuild reports that only Command Line Tools are installed | Select the full Xcode Developer directory and install the iOS platform | doctor reports the correct paths and version |
+| `mcpbridge` is missing | Check the installed version and run `xcrun --find mcpbridge` | The command exists and Codex can call the tools |
+| MCP is enabled but no project is found | Open the project in Xcode, allow external agents, and reload Codex configuration | The current discovery tool returns the workspace |
+| `XcodeListWindows` from older instructions is missing | Inspect the current MCP tool list and use its workspace interface | A real tool call succeeds |
+| `SwiftUIMacros.StateMacro` / plugin malformed response | Inspect preceding sandbox or permission errors; approve the necessary build command if required | The same source builds; do not rewrite SwiftUI blindly for a permission failure |
+| `requires a development team` | Sign in, select a team, and set the local 10-character Team ID | Signed build and codesign verification succeed |
+| Bundle identifier is unavailable | Use your own unique prefix for the app and UI tests | Xcode creates or finds the provisioning profile |
+| Signing appears stuck | Check the Mac for a codesign keychain prompt; the owner must handle it | The log proceeds past CodeSign and completes |
+| Device is unavailable or disappears | Unlock, check cable/port, and confirm trust and Developer Mode | The physical device is connected |
+| Build succeeds but installation fails | Check signing, provisioning, OS compatibility, and lock state | devicectl install succeeds |
+| Launch reports missing `--device` | Put options before the bundle ID; later arguments may be passed to the app | launch.json records the launch result |
+| Background test fails after a Home event | Check app.state rather than assuming Home worked; activate Settings instead | The app actually enters the background and returns paused |
+| `Wait for ... to idle` takes too long | Inspect runner.log, extend collect, and obtain an independent screenshot; do not resend | The original action result and updated UI become available |
+| The initial collect result never appears | Check runner.log for startup, signing, bundle ID, or locked-device problems | CODEX_CONTROL_READY and result-0 appear |
+| Runner ends after 10 minutes | Maximum allowance alone does not override the default; also set default allowance and XCTestCase.executionTimeAllowance | A new session no longer uses the old default allowance |
+| Pending state blocks further actions | The earlier outcome is unresolved; keep collecting, since a failed transfer may still have partly completed | Pending state clears only after the original result is confirmed |
+| tap-id is ambiguous or not hittable | Inspect the latest hierarchy for one hittable match | Exactly one visible target matches |
+| Screenshot and tap positions disagree | Check points versus pixels, orientation, and coordinates made stale by the keyboard | Relocate the target using the latest hierarchy |
+| Text goes into the wrong field | Focus the intended input and inspect the keyboard/draft | The screen and hierarchy show the correct content |
+| Older Xcode lacks capture screenshot | Check `xcrun devicectl help device capture screenshot` | Use bridge screenshots or XCTest attachments |
+| Network requests fail through a local proxy port | Check that the proxy is running and the execution environment permits access | The request succeeds; do not silently delete the user's proxy configuration |
 
-## 最小诊断命令
+## Minimal diagnostic commands
 
 ```bash
 python3 scripts/iphone.py doctor
@@ -36,14 +38,14 @@ tail -n 50 "$SESSION/runner.log"
 python3 scripts/iphone.py collect "$SESSION" --timeout 240
 ```
 
-`SESSION` 是实际控制会话路径。日志可能包含本机路径和个人数据，贴到公开 issue 前先删去敏感内容。
+`SESSION` must be the actual control-session path. Logs can include local paths and personal data; redact them before posting a public issue.
 
-## 避免“看起来成功”
+## Distinguish different kinds of success
 
-- `BUILD SUCCEEDED`：源码和目标构建成功，未必有签名。
-- 安装成功：文件已安装，未必启动。
-- 启动成功：进程创建，未必展示正确页面。
-- 动作回执成功：XCTest 调用完成，未必满足任务。
-- 业务成功：需要核对界面变化；对发送类任务仍不能从单张图推出服务器或接收方状态。
+- `BUILD SUCCEEDED`: the source and targets built, possibly without signing.
+- Installation succeeded: the app was installed, but may not have launched.
+- Launch succeeded: a process was created, but may not display the expected screen.
+- An action was acknowledged: XCTest finished the call, but the task may remain incomplete.
+- The task succeeded: the resulting UI must support that conclusion. A single screenshot still cannot establish server-side or recipient state for a message.
 
-准确记录失败的层级，通常比重跑整个流程更快。
+Identifying the failing stage is usually more useful than rerunning the entire workflow.

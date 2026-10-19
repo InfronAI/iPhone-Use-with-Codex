@@ -1,109 +1,111 @@
-# 真机交互控制：看到、操作、验证
+# Control a physical iPhone: observe, act, and verify
 
-## 设计
+**English** | [简体中文](zh-CN/04-device-control.md) · [Documentation index](README.md)
 
-Codex 在 Mac 上发出命令；已签名的 XCTest Runner 在真实 iPhone 上调用公开的 UI 自动化 API。`devicectl device copy` 只在我们自己的测试 Runner 容器里传递命令和观察结果，不读取目标 App 的私人文件数据库。
+## Design
+
+Codex issues commands on the Mac. A signed XCTest Runner calls public UI automation APIs on the physical iPhone. `devicectl device copy` transfers commands and observations through our test Runner's container; it does not read the target app's private file database.
 
 ```mermaid
 sequenceDiagram
     participant C as Codex / Python
     participant D as devicectl
     participant R as XCTest Runner
-    participant A as 目标 App
-    C->>D: 上传带 session/id 的 action.json
-    D->>R: 写入 Runner Documents
-    R->>R: 先记录 claimed id
-    R->>A: 执行一个 UI 动作
-    A-->>R: 当前 UI 状态
-    R->>R: 写 hierarchy、screen、最后写 result
-    C->>D: collect 同一 id 的结果
-    D-->>C: 结果与观察文件
-    C->>C: 核对效果后决定下一步
+    participant A as Target app
+    C->>D: Upload action.json with session and id
+    D->>R: Write to Runner Documents
+    R->>R: Persist claimed id before acting
+    R->>A: Perform one UI action
+    A-->>R: Current UI state
+    R->>R: Write hierarchy, screen, then result
+    C->>D: Collect the result for the same id
+    D-->>C: Result and observation files
+    C->>C: Verify the effect before choosing the next action
 ```
 
-## 开始一个会话
+## Start a session
 
-完成[环境配置](01-setup.md)，确认 `config.local.json` 指向真实手机和自己的签名。用 `python3 scripts/iphone.py apps` 查看目标 App 的实际 bundle ID；飞书和 Lark 不能仅凭显示名假定为同一个 ID。
+Complete the [setup guide](01-setup.md) and confirm that `config.local.json` specifies the physical phone and your signing identity. Run `python3 scripts/iphone.py apps` to find the target app's actual bundle ID. Do not assume that Feishu and Lark share an ID based on their display names.
 
 ```bash
 python3 scripts/iphone.py prepare-control --app com.apple.Preferences
 ```
 
-命令产生唯一目录，例如 `build/control/012345...`。将实际输出路径设为本终端变量：
+The command creates a unique directory such as `build/control/012345...`. Assign the actual printed path to a variable in your terminal:
 
 ```bash
-SESSION='build/control/这里替换为实际输出的会话ID'
+SESSION='build/control/REPLACE_WITH_THE_PRINTED_SESSION_ID'
 python3 scripts/iphone.py run-control "$SESSION"
 ```
 
-终端 A 保持运行，日志写入 `SESSION/runner.log`。该过程会签名并安装测试 Runner，也可能构建/安装其宿主示例 App；需有可用签名。操作的是 `--app` 指定的已有目标 App，不会安装该第三方 App。
+Leave terminal A running. Logs go to `SESSION/runner.log`. This signs and installs the test Runner and may also build/install its sample host app, so valid signing is required. It operates the existing target app named by `--app`; it does not install that third-party app.
 
-终端 B 设置同一个 SESSION，然后：
+In terminal B, set the same SESSION value, then run:
 
 ```bash
 python3 scripts/iphone.py collect "$SESSION"
 ```
 
-初始结果为 0。阅读 `hierarchy-0.txt`，查看 `screen-0.png`。第一次启动需等待签名和 runner 就绪；默认收集超时为 240 秒，可用 `--timeout 420` 增加等待。
+The initial result has ID 0. Read `hierarchy-0.txt` and inspect `screen-0.png`. The first launch may take time for signing and Runner startup. Collection waits up to 240 seconds by default; use `--timeout 420` to allow more time.
 
-每个会话在 `build/control/` 拥有隔离工程，不改写原来的游戏 UI 测试。手机中的结果目录是 `Documents/codex-<session>/`。
+Each session builds an isolated project under `build/control/`, leaving the original game UI tests intact. On the phone, results live in `Documents/codex-<session>/`.
 
-## 常用操作
+## Common actions
 
-| 意图 | 命令（前缀为 `python3 scripts/iphone.py`） |
+| Intent | Command after `python3 scripts/iphone.py` |
 |---|---|
-| 新观察 | `action "$SESSION" snapshot` |
-| 按稳定 ID 点击 | `action "$SESSION" tap-id --identifier startGame` |
-| 按坐标点击 | `action "$SESSION" tap --x X --y Y` |
-| 拖动 / 定向滑动 | `action "$SESSION" drag --x X1 --y Y1 --end-x X2 --end-y Y2` |
-| 向当前焦点输入 | `action "$SESSION" type --text '你好，Codex'` |
-| 切换 App | `action "$SESSION" activate --bundle com.apple.Preferences` |
-| 发出 Home 事件 | `action "$SESSION" home` |
-| 结束 | `action "$SESSION" done` |
-| 收集原动作结果 | `collect "$SESSION" --timeout 240` |
+| Get a new observation | `action "$SESSION" snapshot` |
+| Tap by stable ID | `action "$SESSION" tap-id --identifier startGame` |
+| Tap coordinates | `action "$SESSION" tap --x X --y Y` |
+| Drag or swipe between points | `action "$SESSION" drag --x X1 --y Y1 --end-x X2 --end-y Y2` |
+| Type into the current focus | `action "$SESSION" type --text '你好，Codex'` |
+| Switch apps | `action "$SESSION" activate --bundle com.apple.Preferences` |
+| Issue a Home event | `action "$SESSION" home` |
+| Finish | `action "$SESSION" done` |
+| Collect the original action's result | `collect "$SESSION" --timeout 240` |
 
-X/Y 为说明占位符。每次先从最新 hierarchy 获取元素位置，坐标为 app frame 内的 **points**。例如历史设备屏幕截图为 1125×2436 像素，UI 坐标为 375×812 points，不能直接把截图像素作为点击坐标。新设备或横竖屏变化后要重新观察，不复用历史坐标。
+X/Y are placeholders. Locate elements in the latest hierarchy before each action. Coordinates are **points** within the app frame. On the original device, screenshots were 1125×2436 pixels while UI coordinates were 375×812 points. Do not use screenshot pixels directly as tap coordinates. Observe again on a different device or after an orientation change rather than reusing historical coordinates.
 
-`tap-id` 要求恰好一个匹配且可点击的元素，否则停止。文字输入之前先点击目标输入框并检查焦点；中文输入仍可能受键盘、焦点和目标 App 影响，需要检查实际草稿。
+`tap-id` requires exactly one matching, hittable element; otherwise it stops. Before typing, tap the intended input field and confirm focus. Chinese input can still depend on the keyboard, focus, and target app, so inspect the actual draft.
 
-界面树和截图按顺序采集，并非同一时刻的原子快照。App 切换动画期间可能看到过渡画面，应再 snapshot 确认稳定布局。游戏可能在阅读结果时已经结束；旧树里的暂停按钮会消失，此时应重新观察并选择当前按钮，不能假设原按钮仍可点击。明确的 Runner error 会终止该测试；先检查错误和当前画面，再准备新会话。
+The hierarchy and screenshot are captured sequentially, not as an atomic snapshot. App-switch animations can produce a transitional image; request another snapshot to confirm a stable layout. A game may end while you read the previous observation, making its pause button disappear. Observe again and select a currently available control. An explicit Runner error terminates the test; inspect the error and current screen before preparing a new session.
 
-Home 事件成功返回不证明 App 已进入后台。在本项目原始设备上它曾无效；生命周期验证应检查 App 状态，或切换到设置后再返回。
+A successful Home event does not prove that the app entered the background. It failed to do so on the original project device. Verify the app state or switch to Settings and back when testing lifecycle behavior.
 
-## 超时与不重复执行
+## Timeouts and avoiding repeated execution
 
-每个客户端一次只允许一个 pending 动作，并用文件锁阻止并发写入。上传前持久化 pending；Runner 在执行前写入 claimed 编号。不同会话有不同 UUID，旧命令不会混入新会话。完成状态最后写入，保证确认结果存在时观察文件已生成。
+Each client allows one pending action at a time and uses a file lock to prevent concurrent writes. Pending state is persisted before upload; the Runner writes the claimed ID before execution. Sessions have separate UUIDs so old commands do not enter a new session. Completion is written last, after the observation files have been generated.
 
-这些措施提供保守的**至多一次尝试**语义，不是事务或“恰好一次”保证。断电、XCTest 崩溃或传输错误可能导致动作未执行，或已执行但没有完整回执。
+These measures provide conservative **at-most-once attempt** semantics, not a transaction or an exactly-once guarantee. Power loss, an XCTest crash, or a transfer failure may leave an action unexecuted, or executed without a complete acknowledgement.
 
-遇到超时：
+If an action times out:
 
-1. 保留当前会话和 pending 编号。
-2. 检查 `runner.log`；可用 `python3 scripts/iphone.py screenshot build/current.png` 独立观察当前手机画面（截图子命令依赖本机 devicectl 是否支持）。
-3. 执行 **collect 原会话**，它只取结果，不重传动作。
-4. 未确认结果前不要再发动作；尤其不要重复点击发送、支付、删除等按钮。
-5. 若进程已死且结果无法恢复，人工或独立观察确认当前状态，再准备全新会话；不要手动清除 pending 后盲目重放。
+1. Keep the current session and pending ID.
+2. Inspect `runner.log`. You can independently observe the phone with `python3 scripts/iphone.py screenshot build/current.png` if the local devicectl supports that subcommand.
+3. Run **collect on the original session**. It retrieves results without resending the action.
+4. Do not issue another action before resolving the outcome, especially another tap on Send, Pay, or Delete.
+5. If the process has died and the result cannot be recovered, establish the current state manually or through independent observation before preparing a new session. Do not clear pending state and blindly replay the action.
 
-会话在 30 分钟循环期限后停止；单个 XCTest 调用仍可能被系统等待延迟。run-control 设置了 2100 秒的测试执行上限，实际中止时机取决于 XCTest。结束时发送 done 并等待终端 A 退出。一个手机只运行一个控制/测试会话。
+The session loop expires after 30 minutes, although individual XCTest calls may be delayed by system waits. `run-control` sets a 2100-second test execution allowance; exact termination timing depends on XCTest. Send done when finished and wait for terminal A to exit. Run only one control or test session on a phone at a time.
 
-## Lark 历史案例如何复用
+## Adapt the historical Lark workflow
 
-原始任务中用户明确要求给指定联系人发消息，并允许使用简单招呼；真实执行完成了查找会话、核对收件人、输入、核对草稿、发送和结果观察。教程不提供含私人联系人的回放脚本。
+In the original task, the user explicitly requested a message to a specified contact and authorized a simple greeting. The execution found the conversation, verified the recipient, entered and checked the draft, sent it, and observed the result. This tutorial does not include a replay script containing private contacts.
 
-复用步骤：
+To adapt the workflow:
 
-1. 在已登录的测试账号/获授权账号上确认目标 App bundle ID，准备控制会话。
-2. 读取会话列表或搜索结果，依据姓名及其他可见信息确认唯一收件人。遇同名且无法区分时询问用户。
-3. 打开会话，观察输入框与当前键盘。先聚焦，再输入已授权内容。
-4. 读取新的 UI 树和截图，确认草稿内容及发送按钮状态。
-5. 单次点击发送；如果操作超时，继续 collect，不再次点击。
-6. 结合新消息气泡、草稿清空和状态图标判断界面反馈。仅据 UI 不应宣称服务端审计通过或收件人已读。
-7. done 结束，处理好本地敏感日志后再分享任何证据。
+1. Confirm the app bundle ID for a signed-in test account or another account you are authorized to operate, then prepare a session.
+2. Inspect the conversation list or search results. Use the name and other visible details to identify a unique recipient. Ask the user if names are ambiguous.
+3. Open the conversation and inspect the composer and keyboard. Focus the field, then enter the authorized content.
+4. Inspect the new hierarchy and screenshot to confirm the draft and Send button state.
+5. Tap Send once. If the action times out, keep collecting rather than tapping again.
+6. Evaluate the message bubble, cleared draft, and status icon together. UI evidence alone does not establish a server-side audit or prove that the recipient read the message.
+7. Finish with done and handle sensitive local logs before sharing evidence.
 
-不要对历史联系人或旧消息自动重放。本项目的自动回归测试只操作示例游戏和系统设置。
+Do not automatically replay messages to historical contacts. The repository's automated regression tests operate only the sample game and Settings.
 
-## 能力边界
+## Scope and limits
 
-支持公开 XCTest 能操作的 UI。不可保证所有第三方 App、系统保护页面、生物认证、锁屏、支付认证或反自动化页面都可操作。界面树可能缺少自绘控件文字；这时结合截图和当前可见结构验证，不能编造元素。
+The bridge supports UI accessible through public XCTest APIs. It cannot guarantee access to every third-party app, protected system screen, biometric prompt, lock screen, payment authentication flow, or screen that prevents automation. Hierarchies may omit text rendered by custom controls; combine screenshots and the visible structure rather than inventing elements.
 
-所有截图、UI 树、动作 JSON 默认在忽略的 build 目录中。它们可能含输入文本、账户和聊天内容。需要清理时，在确认会话结束后删除自己需要清理的本地会话目录；若要删除手机上的观察文件，可在确认没有其他测试使用时卸载专用测试 Runner。它的 ID 是 `<bundle_id>.uitests.xctrunner`，不要误卸载目标 App。
+Screenshots, hierarchies, and action JSON files default to the ignored build directory. They may contain typed text, account details, and chats. After a session has ended, remove its local directory if you need to clear those records. To remove observations from the phone, you can uninstall the dedicated test Runner once no other test uses it. Its ID is `<bundle_id>.uitests.xctrunner`; do not accidentally uninstall the target app.

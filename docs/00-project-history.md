@@ -1,57 +1,59 @@
-# 项目过程复盘
+# Project history
 
-## 来源与范围
+**English** | [简体中文](zh-CN/00-project-history.md) · [Documentation index](README.md)
 
-本次整理于 2026-10-19，依据两组互补证据：
+## Sources and scope
 
-- 用户提供的[分享讨论：安装 Xcode 并写 Hello World](https://chatgpt.com/share/6ad5e444-5d08-83e9-81ce-11020f88cd0d)。本次已读取分享页内的对话数据；它主要记录环境、CLI、签名与 MCP 讨论。
-- 本地同日 Codex 项目会话、Swift 源码、构建日志、`.xcresult` 与游戏截图。它们记录实际部署、游戏开发和 Lark 界面操作。
+This project was documented on October 19, 2026, using two complementary sources:
 
-下面是过程摘要，不是逐字聊天导出。私人联系人信息、设备标识、签名团队、聊天截图和完整 UI 树均不随仓库发布。
+- The user's [shared discussion: installing Xcode and writing Hello World](https://chatgpt.com/share/6ad5e444-5d08-83e9-81ce-11020f88cd0d). The conversation data embedded in the shared page was retrieved during the work. It primarily covers setup, the CLI, signing, and MCP.
+- The local Codex project session from the same day, Swift source, build logs, `.xcresult` bundles, and game screenshots. These record actual deployment, game development, and UI interaction with Lark.
 
-## 阶段一：把环境搭起来
+This is a process summary, not a verbatim transcript. Private contact information, device identifiers, signing teams, chat screenshots, and complete UI dumps are excluded from the public repository.
 
-最初的问题是如何在 Mac 安装 Xcode、用 SwiftUI 写 Hello World 并安装到自己的 iPhone。讨论明确了：完整 Xcode、iOS SDK、Apple 账户、Team、设备信任与开发者模式共同构成真机部署前提。
+## Stage 1: Set up the environment
 
-随后希望用本机 Codex 完成整个过程。用户执行了 `codex mcp add xcode -- xcrun mcpbridge`，列表中出现 xcode 服务。讨论进一步区分了“外部 Codex 访问 Xcode MCP”与“Xcode 内置 coding agent”，并提醒配置成功还需要实际调用工具验证。
+The original question was how to install Xcode on a Mac, write a SwiftUI Hello World app, and install it on the user's own iPhone. The discussion established the prerequisites: full Xcode, the iOS SDK, an Apple account, a development team, device trust, and Developer Mode.
 
-讨论中的 `XcodeListWindows` / `tabIdentifier` 是当时说明中的接口名称；本次工具目录提供的是 `XcodeListWorkspaces` / `workspaceIdentifier`。教程因此要求动态发现接口，不把旧名称当作通用 API。
+The user then wanted local Codex to carry out the entire workflow. They ran `codex mcp add xcode -- xcrun mcpbridge`, and the xcode service appeared in the list. The discussion distinguished an external Codex client accessing Xcode through MCP from the coding agent built into Xcode. Configuration still needed verification through an actual tool call.
 
-## 阶段二：Hello World 真机部署
+The earlier instructions referred to `XcodeListWindows` / `tabIdentifier`; the tool catalog available during this project exposed `XcodeListWorkspaces` / `workspaceIdentifier`. The tutorial therefore asks readers to discover the current interfaces rather than treat older names as universal APIs.
 
-用户要求显示 Hello, World! 和点击计数器，检查最低 iOS、自动签名与真实设备，编译后安装启动，遇到账户/配对授权时再明确提示。
+## Stage 2: Deploy Hello World to the iPhone
 
-实际工程设为仅 iPhone、最低 iOS 17.0。初次 SwiftUI 编译遇到宏插件沙箱错误，获得执行权限后编译成功。签名随后报 `Signing for "HelloWorld" requires a development team.`；用户登录账户、选择 Team 后重试成功。
+The user requested Hello, World! and a tap counter, checks for the minimum iOS version, automatic signing, and the connected physical device, followed by compilation, installation, and launch. Account or pairing authorization was to be surfaced only when required.
 
-构建、签名校验、安装、启动和进程检查最终完成。验证设备为 iPhone 13 mini、iOS 26.7.1，Xcode 为 27.1。这些是该次环境观测，不是本项目声称的最低工具版本。
+The project targeted iPhone only, with iOS 17.0 as the deployment minimum. The first SwiftUI build hit a macro-plugin sandbox error; compilation succeeded after the required execution permission was granted. Signing then failed with `Signing for "HelloWorld" requires a development team.` The user signed in, selected a team, and the retry succeeded.
 
-## 阶段三：升级《雷电 · 星空突袭》
+Build, signature verification, installation, launch, and process checks all completed. The observed environment was an iPhone 13 mini running iOS 26.7.1 with Xcode 27.1. These are observations from that run, not minimum tool-version requirements.
 
-保留工程，替换为 SwiftUI 外壳和 SpriteKit 游戏，战斗规则拆成独立 `GameEngine`。加入拖动、自动射击、敌机、补给、炸弹、Boss、最高分、暂停和重新开始。
+## Stage 3: Upgrade to Neon Strike
 
-固定随机种子检查覆盖伤害保护、计分、炸弹库存、Boss 推进、升级和帧率一致性。真机 UI 测试则检查出击、拖动、炸弹计数、暂停、重开和前后台切换。
+The existing project became a SpriteKit game with a SwiftUI shell and a separate `GameEngine` for the rules. Features included aircraft dragging, automatic fire, enemies, supplies, bombs, bosses, high scores, pause, and restart.
 
-最有价值的失败：第一次把“发出 Home 事件”当作“已经进入后台”，后台暂停断言失败；增加状态检查后，确认手机实际上没有离开 App。最终改为激活系统设置，并断言游戏为后台状态，再返回检查自动暂停。最终测试在 16:24:33 左右通过，随后重新安装并停在游戏开始界面。
+Checks with fixed random seeds covered damage protection, scoring, bomb inventory, boss progression, upgrades, and frame-rate independence. Physical-device UI tests covered starting a mission, dragging, bomb counts, pausing, restarting, and foreground/background transitions.
 
-## 阶段四：通过界面操作 Lark
+One useful failure exposed a mistaken assumption: sending a Home event was treated as proof that the app had entered the background. The pause assertion failed. An explicit state check showed that the phone had not actually left the app. The final test activated Settings, asserted that the game was in the background, then returned to check automatic pause. It passed at approximately 16:24:33, after which the game was reinstalled and left on its start screen.
 
-用户要求给指定联系人发送消息，并授权使用简单招呼。流程先查已安装 App、打开 Lark、核对会话，再输入、核对草稿、点击发送和观察结果。历史会话记录确认消息出现在界面并显示状态图标；这不等于服务器审计或对方已读。
+## Stage 4: Operate Lark through its UI
 
-Xcode 设备交互工具遇到授权，通用移动设备接口又未列出该真机。实际使用了备用方案：运行长时间 XCTest，通过测试 Runner 的 Documents 容器交换 `action.json`、界面树和结果文件。
+The user requested a message to a specified contact and authorized a simple greeting. The workflow checked installed apps, opened Lark, verified the conversation, entered text, checked the draft, tapped Send, and observed the result. The historical session recorded the message appearing with a status icon; this is not a server-side audit or proof that the recipient read it.
 
-Lark 的输入界面长时间停在 XCTest 的等待空闲阶段。处理方式是延长等待、读日志、观察截图与原动作结果，未采用私有 API 禁用等待。原型将等待窗口提高到约 210 秒，并在动作前持久化处理编号，避免重启后重复发送。
+Xcode's device-interaction tool encountered an authorization step, while the generic mobile-device interface did not list this physical iPhone. The working fallback was a persistent XCTest session exchanging `action.json`, UI hierarchies, and result files through the test Runner's Documents container.
 
-历史控制临时目录和 Runner 已在该次任务末尾清理。本仓库依据执行记录重建并增强该方案，加入独立会话 ID、客户端锁、pending 状态、输入验证和内置截图。
+Lark's composer spent a long time in XCTest's wait-for-idle phase. The response was to extend the wait, read logs, inspect screenshots, and collect the original action's result. No private API was used to disable idle waiting. The prototype increased its wait window to about 210 seconds and persisted the processed action ID before execution to avoid sending again after a restart.
 
-## 本次转为可复用仓库的变化
+The temporary control directory and Runner were removed at the end of that historical task. This repository reconstructs and extends the approach with separate session IDs, a client lock, pending state, input validation, and built-in screenshots.
 
-| 原型 | 仓库版 |
+## Turning the prototype into a reusable repository
+
+| Prototype | Repository version |
 |---|---|
-| 固定 UDID、个人 Team 和 bundle ID | 忽略的本地 JSON 配置、Xcode 构建变量 |
-| 临时脚本，仅能点按/输入 | 统一 CLI、按 ID 点按、拖动、切换 App、结束会话 |
-| 固定临时路径 | 每个控制会话独立目录和 UUID |
-| 超时靠人工记忆避免重试 | pending 状态阻止新动作，`collect` 只取原结果 |
-| 游戏和控制测试临时替换 | 控制桥在 `build/control/` 隔离副本编译 |
-| 分散的聊天说明和日志 | 按步骤教程、排障表、测试与实际验证记录 |
+| Fixed UDID, personal team, and bundle ID | Ignored local JSON configuration and Xcode build variables |
+| Temporary tap/type script | Unified CLI with ID-based taps, dragging, app switching, and session completion |
+| Fixed temporary path | Separate directory and UUID for each session |
+| Avoiding retries depended on operator memory | Pending state blocks new actions; `collect` only retrieves the original result |
+| Game tests temporarily replaced with control tests | The bridge builds in an isolated copy under `build/control/` |
+| Instructions scattered across chat and logs | Step-by-step tutorials, troubleshooting, tests, and validation records |
 
-本仓库不把回忆、计划和测试成功混为一谈。最终结果见[验证记录](06-validation.md)。
+Historical recollections, plans, and successful tests remain distinct. See the [validation record](06-validation.md) for actual results.

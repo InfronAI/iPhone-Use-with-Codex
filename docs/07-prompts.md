@@ -1,33 +1,35 @@
-# 可复用 Codex 任务
+# Reusable Codex tasks
 
-在本仓库目录启动 Codex；使用当前用户已授权的设备和配置。下面每段可单独复制。
+**English** | [简体中文](zh-CN/07-prompts.md) · [Documentation index](README.md)
 
-## 环境与 MCP 诊断
+Start Codex in this repository and use the device and configuration authorized by the current user. Each prompt below can be copied independently.
 
-> 阅读 AGENTS.md。检查 Xcode、Python、devicectl 和真实 iPhone 状态。若已配置 Xcode MCP，请实际调用当前版本的工作区发现工具，再读取项目基本信息。区分“配置存在”“MCP 可调用”“真机可用”。不要根据配置文件推测连接成功；遇到确实需要本人完成的授权，说明具体窗口和操作。
+## Environment and MCP diagnostics
 
-## 构建并部署
+> Read AGENTS.md. Check Xcode, Python, devicectl, and the physical iPhone's state. If Xcode MCP is configured, actually call its current workspace-discovery tool and read basic project information. Distinguish configuration presence, callable MCP tools, and device availability. Do not infer a working connection from configuration alone. If owner authorization is genuinely required, identify the exact window and action.
 
-> 检查 config.local.json，然后构建、签名并部署到指定真实 iPhone。调用仓库的 iphone.py，发现错误先诊断再修复。分别报告编译、签名校验、安装、启动和界面验证结果。不要使用模拟器代替，不要提交本地身份配置。
+## Build and deploy
 
-## Hello World 入门
+> Check config.local.json, then build, sign, and deploy to the specified physical iPhone using this repository's iphone.py. Diagnose and fix failures. Report compilation, signature verification, installation, launch, and UI verification separately. Do not substitute a simulator or commit local identity settings.
 
-> 在独立分支中用 examples/HelloWorldView.swift 实现 Hello, World! 和点击计数，保持完整工程可构建。部署到真实 iPhone，启动控制桥，查看计数为 0，点击 incrementCount，确认变为 1，保存观察证据。此页面不运行游戏专用 UI 测试。
+## Hello World exercise
 
-## 游戏回归
+> On a separate branch, use examples/HelloWorldView.swift to implement Hello, World! and a tap counter, keeping the complete project buildable. Deploy to the physical iPhone, start the control bridge, observe a count of 0, tap incrementCount, verify that it becomes 1, and save the evidence. Do not run the game-specific UI tests against this screen.
 
-> 运行游戏逻辑检查和真实 iPhone UI 测试，检查出击、拖动、炸弹减少、暂停、重开恢复、切到设置再返回后自动暂停。断言实际后台状态，不把 Home 按钮调用当作后台转换完成。最后留下可玩的游戏开始界面。
+## Game regression
 
-## 自主 UI 操作
+> Run the game logic checks and physical iPhone UI tests. Check mission start, dragging, bomb consumption, pause, restart, and automatic pause after switching to Settings and back. Assert the actual background state rather than treating a Home call as proof of a completed transition. Leave the playable game on its start screen when finished.
 
-> 使用 docs/04-device-control.md 的控制桥，操作已授权的目标 App。先读取 UI 树和截图，再按可访问性 ID 或最新坐标执行一个动作。每个动作后核对结果再继续。遇到 timeout 只 collect 原动作，不能重复发动作。任务结束 done 并等待 Runner 退出。
+## Autonomous UI interaction
 
-## 发送一条明确授权的测试消息
+> Use the bridge described in docs/04-device-control.md to operate the authorized target app. Inspect the hierarchy and screenshot first, then execute one action using an accessibility ID or current coordinates. Verify the result after each action before continuing. On timeout, collect the original action without resending it. Send done at completion and wait for the Runner to exit.
 
-> 在我已登录并授权操作的通信 App 中，给【填写唯一收件人及识别信息】发送【填写完整消息】。先核对收件人和草稿，再发送一次并观察消息气泡和状态。若同名无法区分则询问；若结果未知则继续观察，不重复发送。不要把消息日志或聊天截图提交到 GitHub。
+## Send an explicitly authorized test message
 
-这一段必须填好收件人和内容再使用。原始案例中的“随便”是当时用户授权，不能当作今后任务的默认授权。
+> In the messaging app where I am signed in and have authorized you to act, send [ENTER THE COMPLETE MESSAGE] to [ENTER A UNIQUE RECIPIENT AND IDENTIFYING DETAILS]. Verify the recipient and draft, send once, and inspect the message bubble and status. Ask if matching names are ambiguous. If the outcome is unknown, keep observing without sending again. Do not commit message logs or chat screenshots to GitHub.
 
-## 发布与交接
+Fill in both the recipient and content before using this prompt. The original user's permission to choose a greeting applied to that task; it is not default authorization for future tasks.
 
-> 检查所有公共文件不含设备 UDID、个人 Team、证书、会话日志或聊天内容。运行相关测试，更新 docs/06-validation.md，只写实际执行结果。按我的仓库同步要求提交并推送，保留远端原有提交历史；不要 force push。给出提交链接和剩余限制。
+## Publish and hand off
+
+> Check that public files contain no device UDIDs, personal Team IDs, certificates, session logs, or private chat content. Run relevant checks and update both language versions of docs/06-validation.md with actual results only. Commit and push as requested, preserving the remote history and avoiding force pushes. Provide the commit link and any remaining limitations.
