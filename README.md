@@ -24,59 +24,115 @@ It grew out of a real development session: a SwiftUI Hello World app became **Ne
 | Avoid accidental retries after a timeout | Pending state, session IDs, sequential action IDs, and claiming before execution |
 | Run regression checks | Deterministic game checks, protocol unit tests, and physical iPhone UI tests |
 
-## Quick start with an environment already set up
+## Start from zero
 
-You need a Mac, full Xcode with the iOS SDK, Python 3.9+, access to Codex, and an iPhone connected by a data cable. See the [validation record](docs/06-validation.md) for the environments actually tested. The app deployment target is iOS 17.0; this does not mean every control feature has been tested on iOS 17 or every Xcode release.
+Follow these steps in order. The [full installation guide](docs/01-setup.md) explains each screen, field, and checkpoint; the [first-run walkthrough](docs/09-first-run.md) then shows exactly what to run in both terminals. Use a Mac, a data-capable cable, a physical iPhone, an Apple account for development signing, and a Codex account with access. Check [Xcode/macOS/iOS compatibility](https://developer.apple.com/support/xcode/) before downloading. The app targets iOS 17.0; tested environments are listed in the [validation record](docs/06-validation.md).
+
+### 1. Install Xcode, Git, and Python
+
+Install [full Xcode](https://apps.apple.com/app/xcode/id497799835), open it once, accept the license, and finish installing iOS platform components. In Terminal (`⌘Space` → Terminal), run:
 
 ```bash
-git clone https://github.com/InfronAI/iPhone-Use-with-Codex.git
-cd iPhone-Use-with-Codex
-python3 scripts/iphone.py doctor
-python3 scripts/iphone.py devices
-cp config.example.json config.local.json
+sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+sudo xcodebuild -runFirstLaunch
+xcodebuild -version
+git --version
+python3 --version
 ```
 
-Edit `config.local.json` with your physical iPhone UDID, your 10-character Team ID, and a unique app bundle ID. Follow the [setup guide](docs/01-setup.md) for account, team, and pairing steps. This local file is ignored by Git.
+Use the actual Xcode path if different. Git is supplied with the Apple developer tools. Python must be **3.9+**; if missing, install a compatible macOS `.pkg` from [Python.org](https://www.python.org/downloads/macos/) and reopen Terminal. No Homebrew, Node.js, npm, or `pip install` is required for the route below. **Check:** all version commands succeed; Command Line Tools alone are insufficient.
+
+### 2. Install and sign in to Codex
+
+Use the [official standalone installer](https://learn.chatgpt.com/docs/codex/cli), follow its PATH instructions, and reopen Terminal if requested:
 
 ```bash
-# No signing or phone required: check game logic and compile the app and UI tests
+curl -fsSL https://chatgpt.com/codex/install.sh | sh
+codex --version
+codex login
+codex login status
+```
+
+Finish the browser sign-in. **Check:** Codex prints its version and reports that you are signed in. Keep account credentials out of project files.
+
+### 3. Download and open the project
+
+```bash
+mkdir -p ~/Projects
+cd ~/Projects
+git clone https://github.com/InfronAI/iPhone-Use-with-Codex.git
+cd iPhone-Use-with-Codex
+open HelloWorld.xcodeproj
+python3 scripts/iphone.py doctor
+```
+
+Run all later commands from this repository directory. If you already cloned it, enter your existing copy. **Check:** Xcode opens the HelloWorld project and doctor resolves the developer tools.
+
+### 4. Pair the phone and configure signing
+
+1. Connect and unlock the iPhone, accept **Trust This Computer**, and wait for Xcode to finish pairing/preparing it.
+2. Enable **iPhone Settings → Privacy & Security → Developer Mode**, restart and confirm if prompted. Keep the phone unlocked.
+3. In **Xcode → Settings → Apple Accounts**, sign in. In the project, set **PROJECT → HelloWorld → Build Settings → APP_BUNDLE_ID** to your own unique value, such as `dev.yourhandle.codexiphone` with your own handle. Preserve the targets' `$(APP_BUNDLE_ID)` and `$(APP_BUNDLE_ID).uitests` expressions.
+4. For **both** HelloWorld and HelloWorldUITests targets, open **Signing & Capabilities**, enable automatic signing, and select your Personal Team or organization team. Select the physical iPhone as the run destination and save (`⌘S`). See [the detailed setup steps](docs/01-setup.md) for finding each setting and the account prerequisites.
+
+Read the device identifier and the selected team:
+
+```bash
+python3 scripts/iphone.py devices
+xcodebuild -project HelloWorld.xcodeproj -target HelloWorld \
+  -configuration Debug -showBuildSettings \
+  | sed -n 's/^[[:space:]]*DEVELOPMENT_TEAM = //p'
+cp -n config.example.json config.local.json
+nano config.local.json
+```
+
+Replace **all three** template values:
+
+```json
+{
+  "device": "YOUR_IPHONE_UDID",
+  "team": "YOUR_TEAM_ID",
+  "bundle_id": "com.yourname.codexiphone"
+}
+```
+
+Use the **physical** device's identifier, without the displayed `(UDID)` suffix; the actual **10-character Team ID**, not the account name; and the **same unique bundle ID** you chose in Xcode. The script rejects the template bundle prefix. In nano, save with `Control-O`, Return, then exit with `Control-X`.
+
+```bash
+python3 -m json.tool config.local.json
+git check-ignore config.local.json
+```
+
+**Check:** JSON parses and Git reports `config.local.json` as ignored. Full instructions, common mistakes, and optional Xcode MCP setup are in [Steps 5–9 of the setup guide](docs/01-setup.md).
+
+### 5. Build, deploy, and verify real interaction
+
+Run each command after the previous one finishes:
+
+```bash
 python3 scripts/iphone.py test-engine
 python3 scripts/iphone.py build-for-testing
-
-# Signing and a physical iPhone required: build, verify the signature, install, launch
 python3 scripts/iphone.py deploy
-
-# Test tapping, dragging, bombs, pause, restart, and background recovery on the phone
 python3 scripts/iphone.py test-ui
 ```
 
-Build artifacts and local observations go into the ignored `build/` directory. If a build fails, open the log path printed by the CLI. A successful unsigned build does not prove that installation succeeded.
+**Check:** engine checks pass; the unsigned app and tests compile; the signed game appears on the phone; the UI test reports **1 test, 0 failures**. It exercises taps, dragging, bomb use, pause, restart, and returning from the background. Detailed logs and screenshots are under ignored `build/`. A successful unsigned build does not prove installation. Follow [first-run Steps 1–2](docs/09-first-run.md) for expected outputs and [troubleshooting](docs/05-troubleshooting.md) if a stage fails.
 
-## Let Codex operate the iPhone
+### 6. Ask Codex to operate the phone
 
-Deploy the sample, then prepare a control session. Set `--app` to the bundle ID in your configuration. You can also use `com.apple.Preferences` to inspect Settings.
+After the previous test has exited, start Codex from the repository:
 
 ```bash
-python3 scripts/iphone.py prepare-control --app com.yourcompany.codexiphone
-# Replace <SESSION> below with the unique session path printed by this command
-
-# Terminal A: leave this running
-python3 scripts/iphone.py run-control <SESSION>
-
-# Terminal B: wait for the initial UI, then inspect hierarchy-0.txt and screen-0.png
-python3 scripts/iphone.py collect <SESSION>
-python3 scripts/iphone.py action <SESSION> tap-id --identifier startGame
-python3 scripts/iphone.py action <SESSION> tap-id --identifier pauseGame
-python3 scripts/iphone.py action <SESSION> done
+codex
 ```
 
-Each step returns paths to a fresh UI hierarchy and screenshot. Codex can read the files, inspect the image, and choose the next action. `<SESSION>` is a documentation placeholder, not a literal shell argument. See the [device control guide](docs/04-device-control.md) for commands, Chinese text input, coordinate units, and timeout recovery.
+Paste this task **into Codex**, not Terminal's shell:
 
-Start Codex in this repository and give it this task:
+> Read AGENTS.md, README.md, and docs/09-first-run.md. Confirm the connected physical iPhone and local configuration, and that no previous Runner is active. Prepare a new control session targeting Settings, keep run-control running, collect the current hierarchy and screenshot, then activate the configured sample app. Inspect the new evidence, send done, and wait for the Runner to exit. Use scripts/iphone.py. If an action times out, collect its original result without resending it. Report actual results and evidence paths without exposing personal identifiers.
 
-> Read AGENTS.md and README.md. Check the connected physical iPhone and local configuration, deploy the sample app, and use the control bridge to inspect the start screen. Start a mission, drag the aircraft, use one bomb and confirm the count decreases, then pause. Use the latest UI hierarchy for each step and keep screenshot evidence. If an action times out, collect its original result without resending it. Report the actual result of every step.
+**Check:** Codex runs tools and reads fresh results. For the exact manual commands, complete [the two-terminal walkthrough](docs/09-first-run.md). It shows how to copy the session path, collect result 0, switch apps, inspect screenshots, and exit normally. The [control reference](docs/04-device-control.md) adds tapping, dragging, text input, coordinates, and recovery. [More Codex prompts](docs/07-prompts.md) cover game interaction and other authorized workflows.
 
-More tasks are available in [Codex prompts](docs/07-prompts.md).
+Xcode MCP is optional; [connect and test it separately](docs/02-codex-xcode.md) if you want IDE tools. The shell/XCTest workflow above works without it.
 
 ## Documentation
 
@@ -91,6 +147,7 @@ The default documentation is in English. Each page links to its complete Chinese
 7. [Validation record and coverage](docs/06-validation.md)
 8. [Reusable Codex prompts](docs/07-prompts.md)
 9. [Official references and sources](docs/08-references.md)
+10. [First complete run: both terminals, checkpoints, and Codex handoff](docs/09-first-run.md)
 
 ## Repository layout
 

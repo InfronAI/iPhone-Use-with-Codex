@@ -2,6 +2,8 @@
 
 **English** | [简体中文](zh-CN/04-device-control.md) · [Documentation index](README.md)
 
+For exact commands for your first two-terminal session, start with [the first-run walkthrough](09-first-run.md).
+
 ## Design
 
 Codex issues commands on the Mac. A signed XCTest Runner calls public UI automation APIs on the physical iPhone. `devicectl device copy` transfers commands and observations through our test Runner's container; it does not read the target app's private file database.

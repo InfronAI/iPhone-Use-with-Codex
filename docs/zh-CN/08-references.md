@@ -8,6 +8,12 @@
 |---|---|
 | [原始分享讨论](https://chatgpt.com/share/6ad5e444-5d08-83e9-81ce-11020f88cd0d) | Xcode 安装、外部 Codex、MCP 配置和签名讨论 |
 | [Codex CLI](https://developers.openai.com/codex/cli) | 本机终端启动与登录入口 |
+| [Codex 独立安装](https://learn.chatgpt.com/docs/codex/cli) | 安装器与首次终端配置 |
+| [Codex CLI 命令参考](https://learn.chatgpt.com/docs/cli/reference) | 登录、状态查询与 MCP 命令 |
+| [Python macOS 下载](https://www.python.org/downloads/macos/) | 尚无 Python 时的安装入口 |
+| [Apple：Xcode 下载](https://developer.apple.com/download/all/?q=Xcode) | 其他兼容的 Xcode 版本 |
+| [Apple：开发者账户](https://developer.apple.com/help/account/basics/about-your-developer-account) | 账户、团队能力与本地开发 |
+| [Apple：构建设置](https://developer.apple.com/documentation/xcode/build-settings-reference) | DEVELOPMENT_TEAM 与构建配置 |
 | [AGENTS.md](https://developers.openai.com/codex/guides/agents-md) | 项目操作约定 |
 | [Codex security](https://developers.openai.com/codex/security) | 沙箱和审批边界 |
 | [Apple：Giving external agents access to Xcode](https://developer.apple.com/documentation/xcode/giving-external-agents-access-to-xcode) | Intelligence 开关、mcpbridge、外部 Codex 配置 |

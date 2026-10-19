@@ -36,6 +36,23 @@ xcrun --find mcpbridge
 
 本次可见工具包括 `XcodeListWorkspaces`、`XcodeListRunDestinations`、`BuildProject`、`GetBuildLog` 和 `DeviceInteractionStartSession`。历史讨论中的 `XcodeListWindows`、`tabIdentifier` 属于不同接口版本。使用当前工具描述返回的 workspace/session 标识，不能猜测。
 
+## 用实际工具调用验证连接
+
+先完成 [Codex 安装与登录](01-setup.md)。在终端进入项目目录，打开工程，再启动新的 Codex 会话：
+
+```bash
+open HelloWorld.xcodeproj
+codex
+```
+
+把以下任务粘贴给 Codex：
+
+> 使用已配置的 Xcode MCP 服务发现当前打开的工作区或工程。用返回的实际标识选择本仓库的 HelloWorld 工程，再列出它的运行目标。报告哪一个是真实连接的 iPhone，以及它是否可用。不要用模拟器替代，不要编造工具名称。如果服务或访问失败，报告实际错误。
+
+**检查点：** 实际发现调用返回已打开的工程，随后设备结果标明真实设备。遇到 Xcode 的实际访问提示时先处理再重试。如果找不到工程，确认 Xcode 窗口已打开，新的 Codex 会话已加载 MCP 配置。Xcode 版本可能改变工具名称，具体接口以当前会话的 schema 为准。
+
+MCP 不可用时，继续 [CLI 首次运行教程](09-first-run.md)。Xcode MCP 配置、Codex 账户访问和 Apple 设备签名是彼此独立的检查。
+
 ## 可选的 Xcode 直接设备交互
 
 当当前 MCP 版本提供设备交互工具时，可按以下次序：

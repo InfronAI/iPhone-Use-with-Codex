@@ -6,6 +6,14 @@ Separate source compilation, signing, device connection, the test Runner, UI int
 
 | Symptom | What to check or do | Evidence of recovery |
 |---|---|---|
+| `codex: command not found` | Follow the official installer's PATH instructions and reopen Terminal | `codex --version` and `codex login status` work |
+| Python is missing or below 3.9 | Install a compatible Python.org macOS package and reopen Terminal | `python3 --version` is 3.9+ |
+| `can't open file scripts/iphone.py` | Enter the cloned repository; each Terminal has its own directory | `ls scripts/iphone.py` succeeds |
+| JSON parse error | Use straight double quotes, commas between fields, no comments/trailing comma | `python3 -m json.tool config.local.json` succeeds |
+| Script rejects device/team/bundle ID | Replace every template value; Team ID is 10 characters, and example bundle prefixes are rejected | Configuration validation passes, then signed deployment succeeds |
+| Team-ID command prints nothing | Select a team on the App target, save, and inspect preceding xcodebuild errors | DEVELOPMENT_TEAM prints the actual ID, not a display name |
+| Installed bundle ID differs from config | Restore target expressions `$(APP_BUNDLE_ID)` / `$(APP_BUNDLE_ID).uitests`; put the chosen value in project APP_BUNDLE_ID and local JSON | The installed identifier matches the configured app |
+| Session JSON or path file is missing | Follow first-run Step 3; paste the entire printed session path and keep both terminals in the same repository | `ls "$SESSION/session.json"` succeeds |
 | xcodebuild reports that only Command Line Tools are installed | Select the full Xcode Developer directory and install the iOS platform | doctor reports the correct paths and version |
 | `mcpbridge` is missing | Check the installed version and run `xcrun --find mcpbridge` | The command exists and Codex can call the tools |
 | MCP is enabled but no project is found | Open the project in Xcode, allow external agents, and reload Codex configuration | The current discovery tool returns the workspace |

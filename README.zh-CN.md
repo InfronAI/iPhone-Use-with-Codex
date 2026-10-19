@@ -22,59 +22,115 @@
 | 防止超时误重发 | pending 状态、会话 ID、顺序编号、执行前认领 |
 | 回归验证 | 确定性游戏逻辑检查、协议单测、真实 iPhone UI 测试 |
 
-## 快速入门（环境已准备好）
+## 从零开始
 
-需要 Mac、完整 Xcode（包含 iOS SDK）、Python 3.9+、可用 Codex、数据线连接的 iPhone。原始与本次验证环境见[验证记录](docs/zh-CN/06-validation.md)。最低 App 部署目标是 iOS 17.0，不代表全部控制能力在 iOS 17 / 所有 Xcode 上都验证过。
+按以下步骤顺序操作。[完整安装教程](docs/zh-CN/01-setup.md)解释每个菜单、字段和检查点；[首次运行教程](docs/zh-CN/09-first-run.md)进一步给出两个终端的具体命令。准备 Mac、支持数据传输的线、真实 iPhone、用于开发签名的 Apple 账户和具有访问权限的 Codex 账户。下载前核对 [Xcode / macOS / iOS 兼容性](https://developer.apple.com/support/xcode/)。App 最低部署目标为 iOS 17.0；实际测试环境见[验证记录](docs/zh-CN/06-validation.md)。
+
+### 1. 安装 Xcode、Git 和 Python
+
+安装[完整 Xcode](https://apps.apple.com/app/xcode/id497799835)，首次打开后同意许可并完成 iOS 平台组件安装。打开终端（`⌘Space` → Terminal），执行：
 
 ```bash
-git clone https://github.com/InfronAI/iPhone-Use-with-Codex.git
-cd iPhone-Use-with-Codex
-python3 scripts/iphone.py doctor
-python3 scripts/iphone.py devices
-cp config.example.json config.local.json
+sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+sudo xcodebuild -runFirstLaunch
+xcodebuild -version
+git --version
+python3 --version
 ```
 
-编辑 `config.local.json`，填入真实 iPhone 的 UDID、自己的 10 位 Team ID、唯一的 App bundle ID。账户、Team、配对设置见[环境教程](docs/zh-CN/01-setup.md)。该文件不会进入 Git。
+Xcode 安装位置不同时使用实际路径。Git 随 Apple 开发工具提供。Python 必须为 **3.9+**；没有则到 [Python.org](https://www.python.org/downloads/macos/) 安装兼容的 macOS `.pkg`，重新打开终端。下面的路线不要求 Homebrew、Node.js、npm 或 `pip install`。**检查：** 版本命令全部成功；仅安装 Command Line Tools 不够。
+
+### 2. 安装并登录 Codex
+
+使用[官方独立安装器](https://learn.chatgpt.com/docs/codex/cli)，按输出完成 PATH 配置，如有提示则重开终端：
 
 ```bash
-# 无需签名或手机：检查游戏逻辑、编译 App 和 UI 测试
+curl -fsSL https://chatgpt.com/codex/install.sh | sh
+codex --version
+codex login
+codex login status
+```
+
+在浏览器完成登录。**检查：** Codex 输出版本并报告已登录。账户凭据不要写进项目文件。
+
+### 3. 下载并打开项目
+
+```bash
+mkdir -p ~/Projects
+cd ~/Projects
+git clone https://github.com/InfronAI/iPhone-Use-with-Codex.git
+cd iPhone-Use-with-Codex
+open HelloWorld.xcodeproj
+python3 scripts/iphone.py doctor
+```
+
+后续命令都在此项目目录运行。已克隆过则进入已有副本。**检查：** Xcode 打开 HelloWorld 工程，doctor 能找到开发工具。
+
+### 4. 配对手机并设置签名
+
+1. 连接并解锁 iPhone，确认**信任此电脑**，等待 Xcode 完成配对和设备准备。
+2. 开启 **iPhone 设置 → 隐私与安全性 → 开发者模式**，按提示重启并确认。保持手机解锁。
+3. 在 **Xcode → Settings → Apple Accounts** 登录。在工程中将 **PROJECT → HelloWorld → Build Settings → APP_BUNDLE_ID** 改为自己的唯一值，例如将 `dev.yourhandle.codexiphone` 中的用户名换成自己的。保留两个 target 中的 `$(APP_BUNDLE_ID)` 与 `$(APP_BUNDLE_ID).uitests` 表达式。
+4. 为 **HelloWorld 和 HelloWorldUITests 两个 target** 设置 **Signing & Capabilities**，开启自动签名，选择 Personal Team 或组织 Team。运行目标选择真实 iPhone，保存（`⌘S`）。具体菜单位置与账户要求见[详细配置步骤](docs/zh-CN/01-setup.md)。
+
+读取设备标识和已选择的团队：
+
+```bash
+python3 scripts/iphone.py devices
+xcodebuild -project HelloWorld.xcodeproj -target HelloWorld \
+  -configuration Debug -showBuildSettings \
+  | sed -n 's/^[[:space:]]*DEVELOPMENT_TEAM = //p'
+cp -n config.example.json config.local.json
+nano config.local.json
+```
+
+替换模板中的**全部三个值**：
+
+```json
+{
+  "device": "YOUR_IPHONE_UDID",
+  "team": "YOUR_TEAM_ID",
+  "bundle_id": "com.yourname.codexiphone"
+}
+```
+
+填写 **physical 真机**的标识，不包含显示用的 `(UDID)` 后缀；填写实际 **10 位 Team ID**，不是账户名称；bundle ID 与刚才在 Xcode 选择的**唯一值保持一致**。脚本会拒绝模板前缀。在 nano 中按 `Control-O`、回车保存，再按 `Control-X` 退出。
+
+```bash
+python3 -m json.tool config.local.json
+git check-ignore config.local.json
+```
+
+**检查：** JSON 解析成功，Git 输出被忽略的 `config.local.json`。完整说明、常见错误与可选的 Xcode MCP 配置见[安装教程第 5–9 步](docs/zh-CN/01-setup.md)。
+
+### 5. 构建、部署并验证真实交互
+
+每条命令完成后再执行下一条：
+
+```bash
 python3 scripts/iphone.py test-engine
 python3 scripts/iphone.py build-for-testing
-
-# 需要签名和真机：构建、校验签名、安装、启动
 python3 scripts/iphone.py deploy
-
-# 真机点击、拖动、炸弹、暂停、重开、后台恢复测试
 python3 scripts/iphone.py test-ui
 ```
 
-所有构建结果和本地观察数据写入忽略的 `build/`。构建失败查看 CLI 输出的日志路径，不要把 unsigned build 成功当成安装成功。
+**检查：** 游戏逻辑检查通过；无签名 App 和测试编译完成；已签名游戏出现在手机上；UI 测试报告 **1 个测试、0 失败**。测试覆盖点击、拖动、炸弹、暂停、重开和后台返回。详细日志与截图写入被忽略的 `build/`。无签名构建成功不能证明安装成功。预期输出见[首次运行第 1–2 步](docs/zh-CN/09-first-run.md)，失败时按[故障排查](docs/zh-CN/05-troubleshooting.md)处理。
 
-## 让 Codex 操作 iPhone
+### 6. 让 Codex 操作手机
 
-先部署示例，再启动控制会话。`--app` 使用你在配置里填写的 bundle ID；也可用 `com.apple.Preferences` 验证系统设置界面。
+上一轮测试退出后，在项目目录启动 Codex：
 
 ```bash
-python3 scripts/iphone.py prepare-control --app com.yourcompany.codexiphone
-# 输出唯一 SESSION 路径，将下面 <SESSION> 替换为该路径
-
-# 终端 A：保持运行
-python3 scripts/iphone.py run-control <SESSION>
-
-# 终端 B：等待初始界面可用，再读取输出的 hierarchy-0.txt 和 screen-0.png
-python3 scripts/iphone.py collect <SESSION>
-python3 scripts/iphone.py action <SESSION> tap-id --identifier startGame
-python3 scripts/iphone.py action <SESSION> tap-id --identifier pauseGame
-python3 scripts/iphone.py action <SESSION> done
+codex
 ```
 
-每一步返回新的界面树和截图路径，Codex 可以直接读文件、查看图片、决定下一步。`<SESSION>` 是说明占位符，不能原样输入终端。完整命令、中文输入、坐标换算、超时恢复见[真机操控教程](docs/zh-CN/04-device-control.md)。
+把以下任务粘贴到 **Codex 对话中**，不是终端 shell：
 
-在仓库目录启动 Codex，然后给它这段任务：
+> 阅读 AGENTS.md、README.md 和 docs/zh-CN/09-first-run.md。确认当前连接的真实 iPhone、本地配置，以及上一轮 Runner 已退出。新建一个以系统设置为目标的控制会话，保持 run-control 运行，收集当前界面树和截图，再激活配置中的示例 App。核验新的观察结果，发送 done 并等待 Runner 退出。使用 scripts/iphone.py；动作超时时只收集原结果，不重发。报告实际结果和证据路径，不暴露个人标识。
 
-> 阅读 AGENTS.md 和 README。检查当前真实 iPhone 和本地配置，部署示例 App，使用控制桥查看开始界面，点击出击，拖动战机，使用一次炸弹并确认数量减少，再暂停。每步根据最新界面树操作，保存截图证据。发生超时只收集原动作结果，不重复发送动作。最后报告每一步的实际结果。
+**检查：** Codex 实际调用工具并读取新结果。需要逐条手动操作时，完成[双终端首次运行教程](docs/zh-CN/09-first-run.md)：它解释如何复制会话路径、获取结果 0、切换 App、查看截图并正常退出。[控制参考](docs/zh-CN/04-device-control.md)补充点击、拖动、文字输入、坐标和恢复方式。[更多提示词](docs/zh-CN/07-prompts.md)覆盖游戏交互和其他已获授权的任务。
 
-更多现成任务见[Codex 提示词](docs/zh-CN/07-prompts.md)。
+Xcode MCP 是可选项；如果需要 IDE 工具，可以[单独连接并验证](docs/zh-CN/02-codex-xcode.md)。上述 shell / XCTest 流程无需 MCP 也能工作。
 
 ## 教程导航
 
@@ -89,6 +145,7 @@ python3 scripts/iphone.py action <SESSION> done
 7. [验证记录与适用范围](docs/zh-CN/06-validation.md)
 8. [可复制的 Codex 提示词](docs/zh-CN/07-prompts.md)
 9. [官方资料与来源](docs/zh-CN/08-references.md)
+10. [首次完整运行：双终端、检查点与交给 Codex](docs/zh-CN/09-first-run.md)
 
 ## 项目结构
 

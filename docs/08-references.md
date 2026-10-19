@@ -8,6 +8,12 @@ Prepared on October 19, 2026. Use local `--help` output and the current MCP sche
 |---|---|
 | [Original shared discussion](https://chatgpt.com/share/6ad5e444-5d08-83e9-81ce-11020f88cd0d) | Xcode installation, external Codex, MCP configuration, and signing discussions |
 | [Codex CLI](https://developers.openai.com/codex/cli) | Local terminal usage and sign-in |
+| [Codex standalone installation](https://learn.chatgpt.com/docs/codex/cli) | Installer and initial terminal setup |
+| [Codex CLI reference](https://learn.chatgpt.com/docs/cli/reference) | Login, login status, and MCP commands |
+| [Python macOS downloads](https://www.python.org/downloads/macos/) | Python installation if not already available |
+| [Apple: Xcode downloads](https://developer.apple.com/download/all/?q=Xcode) | Alternative compatible Xcode releases |
+| [Apple: Developer accounts](https://developer.apple.com/help/account/basics/about-your-developer-account) | Account/team capabilities and local development |
+| [Apple: Build settings](https://developer.apple.com/documentation/xcode/build-settings-reference) | DEVELOPMENT_TEAM and build configuration |
 | [AGENTS.md](https://developers.openai.com/codex/guides/agents-md) | Project instructions |
 | [Codex security](https://developers.openai.com/codex/security) | Sandbox and approval boundaries |
 | [Apple: Giving external agents access to Xcode](https://developer.apple.com/documentation/xcode/giving-external-agents-access-to-xcode) | Intelligence settings, mcpbridge, and external Codex setup |

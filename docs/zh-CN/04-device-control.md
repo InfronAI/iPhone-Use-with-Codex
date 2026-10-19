@@ -2,6 +2,8 @@
 
 [English](../04-device-control.md) | **简体中文** · [文档目录](README.md)
 
+首次使用两个终端时，先阅读[逐条运行教程](09-first-run.md)。
+
 ## 设计
 
 Codex 在 Mac 上发出命令；已签名的 XCTest Runner 在真实 iPhone 上调用公开的 UI 自动化 API。`devicectl device copy` 只在我们自己的测试 Runner 容器里传递命令和观察结果，不读取目标 App 的私人文件数据库。
@@ -34,7 +36,7 @@ python3 scripts/iphone.py prepare-control --app com.apple.Preferences
 命令产生唯一目录，例如 `build/control/012345...`。将实际输出路径设为本终端变量：
 
 ```bash
-SESSION='build/control/这里替换为实际输出的会话ID'
+SESSION='build/control/REPLACE_WITH_THE_PRINTED_SESSION_ID'
 python3 scripts/iphone.py run-control "$SESSION"
 ```
 

@@ -6,6 +6,14 @@
 
 | 现象 | 检查与处理 | 如何确认恢复 |
 |---|---|---|
+| `codex: command not found` | 按官方安装器输出配置 PATH，重开终端 | `codex --version` 与 `codex login status` 成功 |
+| Python 缺失或低于 3.9 | 安装兼容的 Python.org macOS 安装包，重开终端 | `python3 --version` 为 3.9+ |
+| `can't open file scripts/iphone.py` | 进入克隆的仓库；每个终端的目录独立 | `ls scripts/iphone.py` 成功 |
+| JSON 解析错误 | 使用英文双引号、字段间逗号，不加注释或末尾逗号 | `python3 -m json.tool config.local.json` 成功 |
+| 脚本拒绝 device / team / bundle ID | 替换全部模板值；Team ID 为 10 位，示例 bundle 前缀会被拒绝 | 配置检查通过，然后完成签名部署 |
+| 获取 Team ID 的命令输出为空 | 为 App target 选择 Team 并保存，查看前面的 xcodebuild 报错 | DEVELOPMENT_TEAM 输出实际 ID，而非显示名称 |
+| 安装的 bundle ID 与配置不同 | 恢复 target 表达式 `$(APP_BUNDLE_ID)` / `$(APP_BUNDLE_ID).uitests`；在工程 APP_BUNDLE_ID 和本地 JSON 填写所选值 | 已安装标识与配置的 App 一致 |
+| 找不到会话 JSON 或路径文件 | 按首次运行第 3 步粘贴完整会话路径；两个终端进入同一仓库 | `ls "$SESSION/session.json"` 成功 |
 | `xcodebuild` 提示只装了 Command Line Tools | 选择完整 Xcode Developer 目录、安装 iOS 平台 | doctor 输出正确路径和版本 |
 | 找不到 `mcpbridge` | 核对安装版本与 `xcrun --find mcpbridge` | 命令存在、Codex 能实际调用工具 |
 | MCP enabled，但找不到工程 | 在 Xcode 打开工程，允许外部 agent，重载 Codex 配置 | 当前发现工具返回工作区 |

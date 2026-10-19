@@ -36,6 +36,23 @@ Restart any Codex session that needs to load the configuration, then ask it to c
 
 Tools available during this project included `XcodeListWorkspaces`, `XcodeListRunDestinations`, `BuildProject`, `GetBuildLog`, and `DeviceInteractionStartSession`. The historical discussion's `XcodeListWindows` and `tabIdentifier` belong to a different interface version. Use workspace and session identifiers returned by the current tools rather than guessing them.
 
+## Test the connection with a real tool call
+
+Finish [Codex installation and sign-in](01-setup.md) first. In Terminal, enter the repository, open its project, then start a new Codex session:
+
+```bash
+open HelloWorld.xcodeproj
+codex
+```
+
+Paste this into Codex:
+
+> Use the configured Xcode MCP server to discover the currently open workspaces/projects. Select this repository's HelloWorld project using the returned identifier, then list its run destinations. Report which destination is the connected physical iPhone and whether it is available. Do not substitute a simulator or invent tool names. If the server or access fails, report the actual error.
+
+**Checkpoint:** a real discovery call returns the open project, followed by a destination result identifying a physical device. Resolve any actual Xcode access prompt before retrying. If nothing is found, verify the Xcode window is open and the MCP configuration was loaded by this new session. The interface may rename tools across Xcode versions; the schema in the current session is authoritative.
+
+If MCP is unavailable, continue with [the CLI first-run guide](09-first-run.md). Xcode MCP configuration, Codex account access, and Apple device signing are separate checks.
+
 ## Optional direct device interaction through Xcode
 
 If the current MCP version exposes device-interaction tools:
