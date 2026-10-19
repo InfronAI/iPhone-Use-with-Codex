@@ -1,0 +1,15 @@
+name: Checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  host-checks:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Protocol tests (no device)
+        run: python3 -B -m unittest discover -s Tests -v
+      - name: Deterministic game checks
+        run: python3 scripts/iphone.py test-engine
+      - name: Build app and UI tests without signing
+        run: python3 scripts/iphone.py build-for-testing

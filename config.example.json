@@ -1,0 +1,5 @@
+{
+  "device": "YOUR_IPHONE_UDID",
+  "team": "YOUR_TEAM_ID",
+  "bundle_id": "com.yourname.codexiphone"
+}
